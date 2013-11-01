@@ -1,0 +1,147 @@
+<apex:page >
+
+<style>
+
+html {
+    height: 100%;
+    min-height: 100%;
+    margin: 0px;
+    padding: 0px;
+}
+
+body {
+	background-image: url({!URLFOR($Resource.VF_Images, '/')}CloudsBackground.jpg);
+	background-repeat:repeat;
+}
+
+.mybtn {
+	border: none;
+	padding: 10px 15px;
+	margin: 10px;
+	background-color: black;
+	color: white;
+}
+
+.mybtn:hover {
+	cursor: pointer;
+}
+
+.datagrid {
+	font: normal 12px/150% Arial, Helvetica, sans-serif; background: #fff;
+	overflow: hidden; border: 1px solid #006699;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px; 
+	border-radius: 3px; 
+	width: 500px;
+	margin: 100px;
+	float: left;
+}
+
+.datagrid table { 
+	border-collapse: collapse; 
+	text-align: left; 
+	width: 100%; 
+} 
+
+.datagrid table td, .datagrid table th { 
+	padding: 3px 10px; 
+}
+
+.datagrid table thead th {
+	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #006699), color-stop(1, #00557F) );
+	background:-moz-linear-gradient( center top, #006699 5%, #00557F 100% );
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#006699', endColorstr='#00557F');
+	background-color:#006699; 
+	color:#FFFFFF; 
+	font-size: 15px; 
+	font-weight: bold; 
+	border-left: 1px solid #0070A8; 
+	text-align:center;
+} 
+
+.datagrid table thead th:first-child {
+	border: none; 
+}
+
+.datagrid table td { 
+	color: #00496B; 
+	border-left: 1px solid #E1EEF4;
+	font-size: 12px;
+	font-weight: normal; 
+	text-align:center;
+}
+
+.datagrid table .alt td { 
+	background: #E1EEF4; 
+	color: #00496B; 
+}
+
+.datagrid table td:first-child {
+	border-left: none;
+}
+
+.datagrid table tr:last-child td {
+	border-bottom: none;
+}
+
+#search-container{
+    width:900px; 
+    height:100%;
+    margin:0px auto;
+    display: none;
+}
+
+#topTen{
+    width:100%;
+    height:100%;
+
+}
+
+#buttons {
+    width: 100%;
+    text-align: center;
+    height:100px;
+    line-height:100px;
+}
+
+#map-canvas {
+    width:800px;
+    height:512px;
+    margin: 0px auto;
+    margin-top: 10px;
+    border: 3px solid black;
+}
+#map-canvas2 {
+    width: 512px;
+    height:512px;
+    margin-left: 150px;
+    float: left;
+    border: 3px solid black;
+}
+
+#panel {
+    width: 200px;
+    text-align: center;
+    margin: 0px auto;
+    z-index: 5;
+    background-color: #fff;
+    padding: 5px;
+    border: 1px solid #999;
+}
+
+#panel p {
+    font-weight:bold; 
+    font-size:large;
+    text-align:center;
+}
+
+#resultCount{
+    margin: 0px auto;
+    text-align:center;
+    font-weight:bold;
+    font-size:large;
+    margin-top: 5px;
+    display: none;
+}
+</style>	
+</apex:page>

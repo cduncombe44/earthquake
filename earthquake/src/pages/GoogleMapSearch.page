@@ -1,0 +1,245 @@
+<apex:page showHeader="false" sidebar="false" controller="GoogleMapSearchController">
+
+<apex:includeScript value="{!URLFOR($Resource.jquery, 'jquery-ui-1.10.2.custom/js/jquery-1.9.1.js')}" />
+<apex:includeScript value="{!URLFOR($Resource.jquery, 'jquery-ui-1.10.2.custom/js/jquery-ui-1.10.2.custom.min.js')}" />
+<apex:includeScript value="https://ajax.microsoft.com/ajax/jquery.templates/beta1/jquery.tmpl.min.js"/>
+<apex:styleSheet value="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.2/themes/smoothness/jquery-ui.css" />
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCyg4MtJTZliq9azBoVsstxSvoPQ75x3RA&sensor=false"></script>
+<apex:include pageName="GoogleMapSearchStyles"/>
+
+<script>
+var map = null;
+var j$ = jQuery.noConflict();
+
+//On Page load
+j$(function() {
+    var geocoder;
+    geocoder = new google.maps.Geocoder();
+    var latlng = new google.maps.LatLng(42.3581, -71.0636);  // Boston, MA
+    var zero = new google.maps.LatLng(0, 0);  // center
+    resetMap(latlng,8);
+    setTopTenMap(zero)
+    getTopQuakes();
+
+    j$('#sb').click(function(){
+        
+        j$('#topTen').hide();
+        j$('#search-container').show();
+        j$('#resultCount').hide();
+        var latlng = new google.maps.LatLng(42.3581, -71.0636);  // Boston, MA
+        resetMap(latlng,8);
+    });
+
+    j$('#tt').click(function(){
+        j$('#search-container').hide();
+        j$('#topTen').show();
+    });
+
+});
+
+function setTopTenMap(pos){
+    var mapOptions = {
+        zoom: 1,
+        center: pos,
+        mapTypeId: google.maps.MapTypeId.ROADMAP,
+        disableAutoPan : true
+    }
+    map = new google.maps.Map(document.getElementById('map-canvas2'), mapOptions); 
+}
+
+function resetMap(pos,zoom){
+    var mapOptions = {
+        zoom: zoom,
+        center: pos,
+        mapTypeId: google.maps.MapTypeId.ROADMAP
+    }
+    map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions); 
+}
+
+function drawRectangle(n,e,s,w){
+    var rectangle = new google.maps.Rectangle({
+        strokeColor: '#228B22',
+        strokeOpacity: 0.5,
+        strokeWeight: 2,
+        fillColor: '#228B22',
+        fillOpacity: 0.2,
+        map: map,
+        bounds: new google.maps.LatLngBounds(
+            new google.maps.LatLng(s,w),
+            new google.maps.LatLng(n,e)
+        )
+    });
+    
+}
+
+function getTopQuakes(){
+    geocoder = new google.maps.Geocoder();
+    GoogleMapSearchController.findTopQuakes(function(result, event){
+        if (event.status && event.result) { 
+            var count = 0;
+            j$.each(event.result, function () {               
+                var letter = String.fromCharCode("A".charCodeAt(0) + count);
+                count++;
+                var lat_lng = new google.maps.LatLng(this.lat, this.lng);
+                //create marker
+                var marker = new google.maps.Marker({
+                    position: lat_lng,
+                    map: map,
+                    title: this.eqid,
+                    icon: "http://maps.google.com/mapfiles/marker" + letter + ".png",
+                    animation: google.maps.Animation.DROP
+                });
+                var iw = new google.maps.InfoWindow();
+                var mag = this.magnitude;
+                var dt = this.eqdatetime;
+                var depth = this.depth;
+                google.maps.event.addListener(marker, 'mouseover', function() {
+                    iw.setContent("<b>Date & Time: </b><i>" + dt + "</i><br/><b>Depth: </b><i>" + depth + "</i><br/><b>Magnitude: </b><i>" + mag + "</i>");
+                    iw.open(map, marker);
+                });
+                google.maps.event.addListener(marker, 'mouseout', function() {
+                    iw.close();
+                });
+
+                j$("#topTenTemplate").tmpl(this).appendTo( "#topTenTable tbody");
+            });           
+        } else {
+           alert(event.message);
+        }
+    });
+    console.log('Comepleted Remote Call for Top Ten');
+}
+
+//Wanted to show user friendly more readable address for top quakes, but some where in the middle of an ocean, so no results, had to abandon
+function revGeocode(latlng,mag,dt){
+    geocoder = new google.maps.Geocoder();
+    geocoder.geocode({'latLng':latlng}, function(results, status) {
+        console.log('In reverse geocode loop');
+        //console.log('Rev Geo: ' + results[1]);
+        if (status == google.maps.GeocoderStatus.OK) {
+            if (results[1]) {
+                j$('#topTenTable tbody').append('<tr><td>' + results[1].formatted_address + '</td><td>' + mag + '</td><td>' + dt + '</td></tr>');   
+            }else{
+                console.log('no results 1');
+            }
+        }else{
+            console.log('GeocodeStatus not ok');
+        }
+    });
+}
+
+function mapEQ(){
+    geocoder = new google.maps.Geocoder();
+    var locParam = j$("[id$='address']").val();
+
+    if(locParam != ''){
+        geocoder.geocode( { 'address': locParam}, function(results, status) {
+            if (status == google.maps.GeocoderStatus.OK) {
+                resetMap(results[0].geometry.location, 8);
+                
+                var n = results[0].geometry.location.lat() + .725;
+                var e = results[0].geometry.location.lng() + .725;
+                var s = results[0].geometry.location.lat() - .725;
+                var w = results[0].geometry.location.lng() - .725;
+                drawRectangle(n,e,s,w);
+                GoogleMapSearchController.findQuakes(n, e, s, w, function(result, event){
+                    j$.each(event.result, function(){
+
+                        var lat_lng = new google.maps.LatLng(this.lat, this.lng);
+                        //create marker
+                        var marker = new google.maps.Marker({
+                            position: lat_lng,
+                            map: map,
+                            title: this.eqid,
+                            animation: google.maps.Animation.DROP
+
+                        });
+                        var iw = new google.maps.InfoWindow();
+                        var mag = this.magnitude;
+                        var fd = this.formattedDate;
+                        var ft = this.formattedTime;
+                        var depth = this.depth;
+                        google.maps.event.addListener(marker, 'mouseover', function() {
+                            iw.setContent("<b>Date: </b><i>" + fd + "</i><br/><b>Time: </b><i>" + ft + "</i><br/><b>Depth: </b><i>" + depth + "</i><br/><b>Magnitude: </b><i>" + mag + "</i>");
+                            iw.open(map, marker);
+                        });
+                        google.maps.event.addListener(marker, 'mouseout', function() {
+                            iw.close();
+                        });
+                    });
+                    if(result.length > 0){
+                        j$('#resultCount').show().css("color","black").text("Results for \'" + locParam + "\' : " + result.length + " \r (10 Max)");
+                    }else{
+                        console.log('no results');
+                        j$('#resultCount').show().css("color","red").text("No earthquakes found near " + locParam);
+                    }
+                    
+                    console.log('# of Results: ' + result.length);
+                    map.setCenter(results[0].geometry.location);
+                });
+            }else{
+                resetMap(new google.maps.LatLng(0, 0), 1);
+                j$('#resultCount').show().css("color","red").text("Cannot find location of :" + locParam);
+            }
+        });
+    }else{
+        j$('#resultCount').show().css("color","red").text("You mst enter a search parameter");
+    }
+    
+}
+</script>
+    
+
+    <div id="buttons">
+        <input id="tt" class="mybtn" type="button" value="Top Ten Quakes of Year"></input>
+        <input id="sb" class="mybtn" type="button" value="Search for Quakes"></input>
+    </div>
+    
+
+    <div id="search-container">
+        <apex:form >
+            <div id="panel">
+                Enter a location
+                <apex:inputText id="address" onkeypress="if(window.event.keyCode == 13){ mapEQ();return false;}"/>
+                <apex:commandButton value="Search" onclick="mapEQ();return false"/>
+            </div>  
+        </apex:form>
+        <div id="map-canvas"></div>
+        <div id="resultCount"></div>
+    </div>
+    
+    <div id="topTen">
+
+        <div id="map-canvas2"></div>  
+
+        <div class="datagrid">
+            <table id="topTenTable">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Magnitude</th>
+                        <th>Lat</th>
+                        <th>Long</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+
+        <script id="topTenTemplate" type="text/x-jquery-tmpl">
+            <tr>
+                <td>${letter}</td>
+                <td>${magnitude}</td>
+                <td>${lat}</td>
+                <td>${lng}</td>
+                <td>${formattedDate}</td>   
+                <td>${formattedTime}</td>  
+            </tr>
+        </script>
+
+    </div>
+
+</apex:page>
